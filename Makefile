@@ -8,5 +8,5 @@ obj-m += charDeviceDriver.o
 
 all: $(MODULES) 
 
-charDeviceDriver.ko: charDeviceDriver.c queue.h
+charDeviceDriver.ko: charDeviceDriver.c ioctl.h
 	make -C $(KERNELDIR) M=$(PWD) modules

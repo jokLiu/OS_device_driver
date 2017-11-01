@@ -6,7 +6,7 @@ static int device_open(struct inode *, struct file *);
 static int device_release(struct inode *, struct file *);
 static ssize_t device_read(struct file *, char *, size_t, loff_t *);
 static ssize_t device_write(struct file *, const char *, size_t, loff_t *);
-// static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned long);
+static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned long);
 
 #define SUCCESS 0
 /* Dev name as it appears in /proc/devices */
@@ -14,10 +14,6 @@ static ssize_t device_write(struct file *, const char *, size_t, loff_t *);
 
 /* Max length of the message from the device, initially 4KB*/
 #define MAX_MESSAGE_SIZE 4096   
-
-/* Max size of all messages, 
-   initially 2MB = 2 * 1024 * 1024 Bytes */
-#define MAX_ALL_MESG_SiZE 2097152
 
 /* 
  * Global variables are declared as static, so are global within the file. 
@@ -36,6 +32,6 @@ static struct file_operations fops = {
 	.read = device_read,
 	.write = device_write,
 	.open = device_open,
-	//.unlocked_ioctl = device_ioctl,
+	.unlocked_ioctl = device_ioctl,
 	.release = device_release
 };
