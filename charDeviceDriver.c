@@ -8,6 +8,12 @@
 #include <linux/slab.h>
 #include <asm/uaccess.h>	/* for put_user */
 #include <charDeviceDriver.h>
+//---
+#include <linux/init.h>
+#include <linux/sched.h>
+#include <linux/time.h>
+#include <linux/delay.h>
+//---
 #include "ioctl.h"
 
 MODULE_LICENSE("GPL");
@@ -32,6 +38,10 @@ static int MAX_ALL_MESG_SiZE = 2097152;
 /* Current size of all the messages stored in the list */
 static int  CURRENT_ALL_MESG_SIZE  = 0;
 
+static DECLARE_WAIT_QUEUE_HEAD(wait_read_queue);
+static DECLARE_WAIT_QUEUE_HEAD(wait_write_queue);
+
+static int flag = 0;
 /* struct to hold a single message in the queue */
 struct node {
 	char *message;
@@ -88,6 +98,7 @@ static int enqueue (struct queue *q, char *message){
 		q->end->next = n;
 		q->end = q->end->next;
 	}	
+	flag++;
 	return 0;
 }
 
@@ -111,6 +122,8 @@ static char *dequeue (struct queue *q){
 
 	/* we free a node to release the allocated memory */
 	kfree(n);
+
+	flag--;
 
 	/* return the message */
 	return message;
@@ -160,15 +173,6 @@ void cleanup_module(void)
  */
 static int device_open(struct inode *inode, struct file *file)
 {
-    
-    mutex_lock (&devLock);
-    if (Device_Open) {
-		mutex_unlock (&devLock);
-		return -EBUSY;
-    }
-    Device_Open++;
-    mutex_unlock (&devLock);
-
     try_module_get(THIS_MODULE);
     
     return SUCCESS;
@@ -177,9 +181,6 @@ static int device_open(struct inode *inode, struct file *file)
 /* Called when a process closes the device file. */
 static int device_release(struct inode *inode, struct file *file)
 {
-    mutex_lock (&devLock);
-	Device_Open--;		/* We're now ready for our next caller */
-	mutex_unlock (&devLock);
 	
 	/* 
 	 * Decrement the usage count, or else once you opened the file, you'll
@@ -209,10 +210,24 @@ static ssize_t device_read(struct file *filp,	/* see include/linux/fs.h   */
 	/* result of function calls */
 	int result;
 
-	/* we retrieve the head of the queue */
-	char *message = dequeue(&message_queue);
+	/* message to retrieve from the queue */
+	char *message;
 
+	/* wait/block until there is a message in the queue */
+	wait_event_interruptible(wait_read_queue, flag > 0); 
+
+	/* lock the queue until we are reading from it */
+	mutex_lock (&devLock);
+
+	/* we retrieve the head of the queue */
+	message = dequeue(&message_queue);
+
+	/* unlock the queue after reading */
+	mutex_unlock (&devLock);
+
+	/* should never happen due to the wait queue */
 	if(!message) return -EAGAIN;
+	// TODO remove all printings
 	printk(KERN_ALERT "Message read: %s\n", message);
 	/* 
 	 * Actually put the data into the buffer 
@@ -239,6 +254,10 @@ static ssize_t device_read(struct file *filp,	/* see include/linux/fs.h   */
 
 	/* we update the counter after message was processed */
 	CURRENT_ALL_MESG_SIZE -= bytes_read;
+
+	/* wake up writer queue because message was retrieved
+	   so there may be more space for writing messages */
+	wake_up_interruptible(&wait_write_queue);
 
 	/* 
 	 * Most read functions return the number of bytes put into the buffer
@@ -268,16 +287,21 @@ device_write(struct file *filp, const char *buffer, size_t length, loff_t * off)
 
 	// TODO ask when to return this error, straight away like now
 	// or during the reading
-	if(length + CURRENT_ALL_MESG_SIZE  > MAX_ALL_MESG_SiZE)
-		return -EAGAIN;
+	/* wait/block until there is a message in the queue */
+	wait_event_interruptible(wait_read_queue, 
+		length + CURRENT_ALL_MESG_SIZE < MAX_ALL_MESG_SiZE); 
+	// TODO make sure that this works
+	// if(length + CURRENT_ALL_MESG_SIZE  > MAX_ALL_MESG_SiZE)
+	// 	return -EAGAIN;
 
+	printk(KERN_ALERT "Input length: %d\n", (int)length);
 
 	/* allocate size for the message */
-	message = kmalloc(length+1, GFP_KERNEL);
+	message = kmalloc(length, GFP_KERNEL);
 
 	/* if allocation failed, abort the current action */
 	if(!message) return -ENOMEM;
-	message[length] = '\0';
+	
 	/* keep the head of the message to add it into the queue */
 	msg_head =  message;
 
@@ -302,19 +326,32 @@ device_write(struct file *filp, const char *buffer, size_t length, loff_t * off)
 	}
 
 	printk(KERN_ALERT "Message written: %s\n", msg_head);
+
+	/* lock the queue until we are adding new message */
+	mutex_lock (&devLock);
+
 	/* we add the message to the queue, 
 	   if the enqueing failed, it means there was not enough
 	   memory left, so we abort, and return an error */
 	if(enqueue(&message_queue, msg_head) < 0) {
 
+		/* unlock the queue after finishing the enqueing */
+		mutex_unlock (&devLock);
+
 		/* message was discarded, so release the memory */
 		kfree(message);
 		return -ENOMEM;
 	}
+	/* unlock the queue after finishing the enqueing */
+	mutex_unlock (&devLock);
+
+	/* wake up the reader queue because message was added */
+	wake_up_interruptible(&wait_read_queue);
 
 	/* update the currently stored message size */
 	CURRENT_ALL_MESG_SIZE += bytes_written;
 
+	printk(KERN_ALERT "Bytes written length: %d\n", (int)bytes_written);
 	/* 
 	 * Most read functions return the number of bytes put into the buffer
 	 */
@@ -357,3 +394,5 @@ device_ioctl(struct file *file,
 	}
 	return -EINVAL;
 }
+
+// TODO test ioctl and test blocking reads and writes

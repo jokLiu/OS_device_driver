@@ -24,10 +24,6 @@ struct cdev *my_cdev;
 /* Major number assigned to the device driver */
 static int Major;		
 
-/* Used to prevent multiple access to device */
-static int Device_Open = 0;	
-
-
 static struct file_operations fops = {
 	.read = device_read,
 	.write = device_write,

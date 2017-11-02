@@ -10,3 +10,7 @@ all: $(MODULES)
 
 charDeviceDriver.ko: charDeviceDriver.c ioctl.h
 	make -C $(KERNELDIR) M=$(PWD) modules
+
+clean:
+	make -C $(KERNELDIR) M=$(PWD) clean
+	rm -f $(PROGS) *.o
