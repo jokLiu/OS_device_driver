@@ -3,12 +3,15 @@ KERNELDIR=/lib/modules/`uname -r`/build
 #KERNELDIR=/usr/src/kernels/`uname -r`-i686
 
 EXTRA_CFLAGS += -I$(PWD)
-MODULES = charDeviceDriver.ko
-obj-m += charDeviceDriver.o
+MODULES = charDeviceDriver.ko charDeviceDriverBlocking.ko
+obj-m += charDeviceDriver.o charDeviceDriverBlocking.o
 
 all: $(MODULES) 
 
-charDeviceDriver.ko: charDeviceDriver.c ioctl.h
+charDeviceDriver.ko: charDeviceDriver.c
+	make -C $(KERNELDIR) M=$(PWD) modules
+
+charDeviceDriverBlocking.ko: charDeviceDriverBlocking.c
 	make -C $(KERNELDIR) M=$(PWD) modules
 
 clean:

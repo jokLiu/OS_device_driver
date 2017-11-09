@@ -15,6 +15,10 @@ static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
 /* Max length of the message from the device, initially 4KB*/
 #define MAX_MESSAGE_SIZE 4096   
 
+/* ioctl call to reset the max size of all messages */
+#define SET_MAX_SIZE 0
+
+
 /* 
  * Global variables are declared as static, so are global within the file. 
  */
