@@ -198,8 +198,6 @@ static ssize_t device_read(struct file *filp,	/* see include/linux/fs.h   */
 	/* Number of bytes actually written to the buffer */
 	int bytes_read = 0;
 
-    printk(KERN_ALERT "length to read: %d\n", (int)length);
-
 	/* result of function calls */
 	int result;
 
@@ -212,16 +210,11 @@ static ssize_t device_read(struct file *filp,	/* see include/linux/fs.h   */
 	/* we retrieve the head of the queue */
 	message = dequeue(&message_queue);
 
-    printk(KERN_ALERT "current all msg size: %d\n", CURRENT_ALL_MESG_SIZE);
- 
 	/* unlock the queue after reading */
 	mutex_unlock (&devLock);
 
     /* indicate that no message is available */
     if(!message) return -EAGAIN;
-
-	// TODO remove all printings
-//	printk(KERN_ALERT "Message read: %s\n", message);
 
 	/*  Actually put the data into the buffer */
 	while (length && *message) {
@@ -264,7 +257,6 @@ device_write(struct file *filp, const char *buffer, size_t length, loff_t * off)
 	/* message to be returned to the user */
 	char *message, *msg_head;
 
-    // TODO make sure that this works
 	/* if the message to be written is larger than
 	   the maximum message size which is 4KB then return an error 
 	   No need to lock it because MAX_MESSAGE_SIZE is never changed */
@@ -300,7 +292,6 @@ device_write(struct file *filp, const char *buffer, size_t length, loff_t * off)
 	/* lock the queue until we are adding new message */
 	mutex_lock (&devLock);
 
-	// TODO make sure that this works
     /* if the message to be written is larger than the remaining size
      * of all messages, then we return an error */
 	if(bytes_written + CURRENT_ALL_MESG_SIZE  > MAX_ALL_MESG_SiZE){
@@ -328,8 +319,6 @@ device_write(struct file *filp, const char *buffer, size_t length, loff_t * off)
     /* update the currently stored message size */
     CURRENT_ALL_MESG_SIZE += bytes_written;
 
-    printk(KERN_ALERT "current all msg size: %d\n", CURRENT_ALL_MESG_SIZE);
-
 	/* unlock the queue after finishing the enqueueing */
 	mutex_unlock (&devLock);
 
@@ -355,7 +344,6 @@ device_ioctl(struct file *file,
 			unsigned int ioctl_num, 
 			unsigned long ioctl_param)
 {
-	// TODO test if ioctl works
 	/* we check whether the right flag is set */
 	if(ioctl_num == SET_MAX_SIZE){
 		
@@ -374,15 +362,9 @@ device_ioctl(struct file *file,
             /* unlock the queue after finishing the update */
             mutex_unlock (&devLock);
 
-            // TODO remove printing
-            printk(KERN_INFO "'size %d'.\n", MAX_ALL_MESG_SiZE);
-
 			/* return success */
 			return 0;
 		}
 	}
 	return -EINVAL;
 }
-
-// TODO test ioctl and test blocking reads and writes
-// TODO lock ioctl function

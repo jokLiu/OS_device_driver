@@ -30,7 +30,7 @@ MODULE_LICENSE("GPL");
 
 DEFINE_MUTEX  (devLock);
 
-/* Max size of all messages, 
+/* Max size of all messages,
    initially 2MB = 2 * 1024 * 1024 Bytes = 2097152 bytes */
 static int MAX_ALL_MESG_SiZE = 2097152;
 
@@ -52,29 +52,29 @@ struct node {
 
 /* queue for the faster processing */
 struct queue {
-	struct node *front;
-	struct node *end;
+    struct node *front;
+    struct node *end;
 } ;
 
 /* initializing the queue */
 static void init(struct queue *q){
-	q->front = NULL;
-	q->end = NULL;
+    q->front = NULL;
+    q->end = NULL;
 }
 
 /* destroying the queue */
 static void destroy(struct queue *q){
-	struct node *head = q->front;
-	struct node *temp;
+    struct node *head = q->front;
+    struct node *temp;
 
-	/* when the queue is destroyed during the 
-	   device removal, we deallocate all the messages and nodes */
-	while(head){
-		temp = head;
-		head = head->next;
-		kfree(temp->message);
-		kfree(temp);
-	}
+    /* when the queue is destroyed during the
+       device removal, we deallocate all the messages and nodes */
+    while(head){
+        temp = head;
+        head = head->next;
+        kfree(temp->message);
+        kfree(temp);
+    }
 }
 
 /* put a new message to the queue */
@@ -144,17 +144,17 @@ static struct queue message_queue;
 int init_module(void)
 {
     Major = register_chrdev(0, DEVICE_NAME, &fops);
-	if (Major < 0) {
-	  printk(KERN_ALERT "Registering char device failed with %d\n", Major);
-	  return Major;
-	}
+    if (Major < 0) {
+        printk(KERN_ALERT "Registering char device failed with %d\n", Major);
+        return Major;
+    }
 
-	/* initialise the empty queue for message storage */
-	init(&message_queue);
+    /* initialise the empty queue for message storage */
+    init(&message_queue);
 
-	printk(KERN_INFO "'mknod /dev/%s c %d 0'.\n", DEVICE_NAME, Major);
+    printk(KERN_INFO "'mknod /dev/%s c %d 0'.\n", DEVICE_NAME, Major);
 
-	return SUCCESS;
+    return SUCCESS;
 }
 
 
@@ -163,34 +163,32 @@ int init_module(void)
  */
 void cleanup_module(void)
 {
-	/* free all the allocated messages */
-	destroy(&message_queue);
+    /* free all the allocated messages */
+    destroy(&message_queue);
 
-	/*  Unregister the device */
-	unregister_chrdev(Major, DEVICE_NAME);
+    /*  Unregister the device */
+    unregister_chrdev(Major, DEVICE_NAME);
 }
 
 
-/* 
+/*
  * Called when a process tries to open the device file, like
  * "cat /dev/mycharfile"
  */
 static int device_open(struct inode *inode, struct file *file)
 {
     try_module_get(THIS_MODULE);
-    
+
     return SUCCESS;
 }
 
 /* Called when a process closes the device file. */
 static int device_release(struct inode *inode, struct file *file)
 {
+    module_put(THIS_MODULE);
 
-	module_put(THIS_MODULE);
-
-	return 0;
+    return 0;
 }
-
 
 
 /* 
@@ -212,7 +210,6 @@ static ssize_t device_read(struct file *filp,	/* see include/linux/fs.h   */
 	char *message, *msg_head;
 
 	/* wait/block until there is a message in the queue */
-    // TODO make sure current all mesg size works
 	wait_event_interruptible(wait_read_queue, CURRENT_ALL_MESG_SIZE > 0);
 
 	/* lock the queue until we are reading from it */
@@ -230,9 +227,6 @@ static ssize_t device_read(struct file *filp,	/* see include/linux/fs.h   */
     /* wake up writer queue because message was retrieved
        so there may be more space for writing messages */
     wake_up_interruptible(&wait_write_queue);
-
-	// TODO remove all printings
-	printk(KERN_ALERT "Message read: %s\n", message);
 
 	/* Actually put the data into the buffer */
 	while (length && *message) {
@@ -254,8 +248,6 @@ static ssize_t device_read(struct file *filp,	/* see include/linux/fs.h   */
 
 	/* we free the message because it is no longer needed */
 	kfree(msg_head);
-
-	printk(KERN_ALERT "current all msg size: %d\n", CURRENT_ALL_MESG_SIZE);
 
 	/* Most read functions return the number of bytes put into the buffer */
 	return bytes_read;
@@ -285,7 +277,6 @@ device_write(struct file *filp, const char *buffer, size_t length, loff_t * off)
 	/* wait/block until there is a message in the queue */
 	wait_event_interruptible(wait_write_queue,
 		length + CURRENT_ALL_MESG_SIZE <= MAX_ALL_MESG_SiZE);
-	// TODO make sure that this works
 
 	/* allocate size for the message */
 	message = kmalloc(length, GFP_KERNEL);
@@ -297,7 +288,6 @@ device_write(struct file *filp, const char *buffer, size_t length, loff_t * off)
 	msg_head = message;
 
 	/* Actually put the data into the buffer */
-    // TODO check * with or without
 	while (length && *buffer) {
 
 		/* 
@@ -314,8 +304,6 @@ device_write(struct file *filp, const char *buffer, size_t length, loff_t * off)
 		length--;
 		bytes_written++;
 	}
-
-	printk(KERN_ALERT "Message written: %s\n", msg_head);
 
 	/* lock the queue until we are adding new message */
 	mutex_lock (&devLock);
@@ -341,9 +329,7 @@ device_write(struct file *filp, const char *buffer, size_t length, loff_t * off)
 	/* wake up the reader queue because message was added */
 	wake_up_interruptible(&wait_read_queue);
 
-
-	printk(KERN_ALERT "Bytes written length: %d\n", (int)bytes_written);
-	/* 
+    /*
 	 * Most read functions return the number of bytes put into the buffer
 	 */
 	return bytes_written;
@@ -362,34 +348,32 @@ device_write(struct file *filp, const char *buffer, size_t length, loff_t * off)
  * calling process), the ioctl call returns the output of this function.
  *
  */
-static long 
-device_ioctl(struct file *file, 
-			unsigned int ioctl_num, 
-			unsigned long ioctl_param)
+static long
+device_ioctl(struct file *file,
+             unsigned int ioctl_num,
+             unsigned long ioctl_param)
 {
-	// TODO ask what is the right flag
-	/* we check whether the right flag is set */
-	if(ioctl_num == SET_MAX_SIZE){
-		
-		 // check if the maximum received is bigger than the old maximum, or
-		 //   new maximum is bigger than the size of all messages currently held 
-		if(ioctl_param > MAX_ALL_MESG_SiZE ||
-		   ioctl_param > CURRENT_ALL_MESG_SIZE){
+    /* we check whether the right flag is set */
+    if(ioctl_num == SET_MAX_SIZE){
 
-			/* lock the queue until we are updating the
-           	   max all message size */
-			mutex_lock (&devLock);
+        /* check if the maximum received is bigger than the old maximum, or
+           new maximum is bigger than the size of all messages currently held */
+        if(ioctl_param > MAX_ALL_MESG_SiZE ||
+           ioctl_param > CURRENT_ALL_MESG_SIZE){
 
-			/* set the new max size of all messages */
-			MAX_ALL_MESG_SiZE = ioctl_param;
+            /* lock the queue until we are updating the
+               max all message size */
+            mutex_lock (&devLock);
 
-			/* unlock the queue after finishing the update */
-			mutex_unlock (&devLock);
-			/* return success */
-			return 0;
-		}
-	}
-	return -EINVAL;
+            /* set the new max size of all messages */
+            MAX_ALL_MESG_SiZE = ioctl_param;
+
+            /* unlock the queue after finishing the update */
+            mutex_unlock (&devLock);
+
+            /* return success */
+            return 0;
+        }
+    }
+    return -EINVAL;
 }
-
-// TODO test ioctl and test blocking reads and writes
