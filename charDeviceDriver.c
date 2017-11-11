@@ -37,12 +37,11 @@ static int MAX_ALL_MESG_SiZE = 2097152;
 /* Current size of all the messages stored in the list */
 static int  CURRENT_ALL_MESG_SIZE  = 0;
 
-static int flag = 0;
-
 /* struct to hold a single message in the queue */
 struct node {
 	char *message;
 	struct node *next;
+    int size;
 } ;
 
 /* queue for the faster processing */
@@ -73,7 +72,7 @@ static void destroy(struct queue *q){
 }
 
 /* put a new message to the queue */
-static int enqueue (struct queue *q, char *message){
+static int enqueue (struct queue *q, char *message, int length){
 	/* we allocate the new node for storing a message */
 	struct node *n = kmalloc(sizeof(struct node), GFP_KERNEL);
 
@@ -82,6 +81,9 @@ static int enqueue (struct queue *q, char *message){
 	n->next=NULL;
 	/* assign the message to the new node */
 	n->message = message;
+
+    /* add it's size */
+    n->size = length;
 
 	/* if the queue is empty we add our new node as
 	   the front and end of the queue */
@@ -95,7 +97,7 @@ static int enqueue (struct queue *q, char *message){
 		q->end->next = n;
 		q->end = q->end->next;
 	}	
-	flag++;
+
 	return 0;
 }
 
@@ -113,14 +115,13 @@ static char *dequeue (struct queue *q){
 
 	/* we retrieve the message from that node */
 	message = n->message;
+    CURRENT_ALL_MESG_SIZE -= n->size;
 
 	/* make queue point to the next element in the queue */
 	q->front = q->front->next;
 
 	/* we free a node to release the allocated memory */
 	kfree(n);
-
-	flag--;
 
 	/* return the message */
 	return message;
@@ -197,6 +198,8 @@ static ssize_t device_read(struct file *filp,	/* see include/linux/fs.h   */
 	/* Number of bytes actually written to the buffer */
 	int bytes_read = 0;
 
+    printk(KERN_ALERT "length to read: %d\n", (int)length);
+
 	/* result of function calls */
 	int result;
 
@@ -208,6 +211,8 @@ static ssize_t device_read(struct file *filp,	/* see include/linux/fs.h   */
 
 	/* we retrieve the head of the queue */
 	message = dequeue(&message_queue);
+
+    printk(KERN_ALERT "current all msg size: %d\n", CURRENT_ALL_MESG_SIZE);
  
 	/* unlock the queue after reading */
 	mutex_unlock (&devLock);
@@ -216,7 +221,7 @@ static ssize_t device_read(struct file *filp,	/* see include/linux/fs.h   */
     if(!message) return -EAGAIN;
 
 	// TODO remove all printings
-	printk(KERN_ALERT "Message read: %s\n", message);
+//	printk(KERN_ALERT "Message read: %s\n", message);
 
 	/*  Actually put the data into the buffer */
 	while (length && *message) {
@@ -236,21 +241,8 @@ static ssize_t device_read(struct file *filp,	/* see include/linux/fs.h   */
 		bytes_read++;
 	}
 
-    /* lock the device again to update the current all message size
-       this can be done in the separate lock because this does not
-       cause any inconsistency */
-    mutex_lock (&devLock);
-
-    /* we update the counter after message was processed */
-    CURRENT_ALL_MESG_SIZE -=  bytes_read;
-
-    /* unlock the queue after the update */
-    mutex_unlock (&devLock);
-
 	/* we free the message because it is no longer needed */
 	kfree(msg_head);
-
-    printk(KERN_ALERT "current all msg size: %d\n", CURRENT_ALL_MESG_SIZE);
 
 	/* Most read functions return the number of bytes put into the buffer */
 	return bytes_read;
@@ -271,8 +263,6 @@ device_write(struct file *filp, const char *buffer, size_t length, loff_t * off)
 
 	/* message to be returned to the user */
 	char *message, *msg_head;
-
-    printk(KERN_ALERT "Size written: %d\n", (int)length);
 
     // TODO make sure that this works
 	/* if the message to be written is larger than
@@ -307,8 +297,6 @@ device_write(struct file *filp, const char *buffer, size_t length, loff_t * off)
 		bytes_written++;
 	}
 
-	printk(KERN_ALERT "Message written: %s\n", msg_head);
-
 	/* lock the queue until we are adding new message */
 	mutex_lock (&devLock);
 
@@ -328,7 +316,7 @@ device_write(struct file *filp, const char *buffer, size_t length, loff_t * off)
 	/* we add the message to the queue, 
 	   if the enqueuing failed, it means there was not enough
 	   memory left, so we abort, and return an error */
-	if(enqueue(&message_queue, msg_head) < 0) {
+	if(enqueue(&message_queue, msg_head, bytes_written) < 0) {
 
 		/* unlock the queue after finishing the enqueing */
 		mutex_unlock (&devLock);
@@ -340,10 +328,10 @@ device_write(struct file *filp, const char *buffer, size_t length, loff_t * off)
     /* update the currently stored message size */
     CURRENT_ALL_MESG_SIZE += bytes_written;
 
+    printk(KERN_ALERT "current all msg size: %d\n", CURRENT_ALL_MESG_SIZE);
+
 	/* unlock the queue after finishing the enqueueing */
 	mutex_unlock (&devLock);
-
-    printk(KERN_ALERT "current all msg size: %d\n", CURRENT_ALL_MESG_SIZE);
 
 	/* Most read functions return the number of bytes put into the buffer */
 	return bytes_written;

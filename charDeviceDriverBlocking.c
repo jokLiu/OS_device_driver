@@ -43,12 +43,11 @@ static DECLARE_WAIT_QUEUE_HEAD(wait_read_queue);
 /* blocking queue for write requests */
 static DECLARE_WAIT_QUEUE_HEAD(wait_write_queue);
 
-static int flag = 0;
-
 /* struct to hold a single message in the queue */
 struct node {
-	char *message;
-	struct node *next;
+    char *message;
+    struct node *next;
+    int size;
 } ;
 
 /* queue for the faster processing */
@@ -79,57 +78,59 @@ static void destroy(struct queue *q){
 }
 
 /* put a new message to the queue */
-static int enqueue (struct queue *q, char *message){
-	/* we allocate the new node for storing a message */
-	struct node *n = kmalloc(sizeof(struct node), GFP_KERNEL);
+static int enqueue (struct queue *q, char *message, int length){
+    /* we allocate the new node for storing a message */
+    struct node *n = kmalloc(sizeof(struct node), GFP_KERNEL);
 
-	/* if allocation failed, abort the current action */
-	if(!n) return -ENOMEM;
-	n->next=NULL;
-	/* assign the message to the new node */
-	n->message = message;
+    /* if allocation failed, abort the current action */
+    if(!n) return -ENOMEM;
+    n->next=NULL;
+    /* assign the message to the new node */
+    n->message = message;
 
-	/* if the queue is empty we add our new node as
-	   the front and end of the queue */
-	if(!q->front) {
-		q->front = n;
-		q->end = n;
-	} 
-	/* if queue is not empty, we add it to the end
-	   and make the end point to the new node */
-	else {
-		q->end->next = n;
-		q->end = q->end->next;
-	}	
-	flag++;
-	return 0;
+    /* add it's size */
+    n->size = length;
+
+    /* if the queue is empty we add our new node as
+       the front and end of the queue */
+    if(!q->front) {
+        q->front = n;
+        q->end = n;
+    }
+        /* if queue is not empty, we add it to the end
+           and make the end point to the new node */
+    else {
+        q->end->next = n;
+        q->end = q->end->next;
+    }
+
+    return 0;
 }
 
 /* retrieve message from the queue and remove it */
 static char *dequeue (struct queue *q){
-	struct node* n;
-	char* message;
+    struct node* n;
+    char* message;
 
-	/* if the queue is empty, we return NULL
-	   indicating that reading is not possible */
-	if(!q->front) return NULL;
+    /* if the queue is empty, we return NULL
+       indicating that reading is not possible */
+    if(!q->front) return NULL;
 
-	/* we get the head of the queue to return */
-	n = q->front;
+    /* we get the head of the queue to return */
+    n = q->front;
 
-	/* we retrieve the message from that node */
-	message = n->message;
+    /* we retrieve the message from that node */
+    message = n->message;
+    CURRENT_ALL_MESG_SIZE -= n->size;
 
-	/* make queue point to the next element in the queue */
-	q->front = q->front->next;
+    /* make queue point to the next element in the queue */
+    q->front = q->front->next;
 
-	/* we free a node to release the allocated memory */
-	kfree(n);
+    /* we free a node to release the allocated memory */
+    kfree(n);
 
-	flag--;
-
-	/* return the message */
-	return message;
+    /* return the message */
+    return message;
 }
 
 
@@ -226,6 +227,10 @@ static ssize_t device_read(struct file *filp,	/* see include/linux/fs.h   */
     /* should never happen due to the wait queue */
     if(!message) return -EAGAIN;
 
+    /* wake up writer queue because message was retrieved
+       so there may be more space for writing messages */
+    wake_up_interruptible(&wait_write_queue);
+
 	// TODO remove all printings
 	printk(KERN_ALERT "Message read: %s\n", message);
 
@@ -247,25 +252,10 @@ static ssize_t device_read(struct file *filp,	/* see include/linux/fs.h   */
 		bytes_read++;
 	}
 
-    /* lock the device again to update the current all message size
-       this can be done in the separate lock because this does not
-       cause any inconsistency */
-    mutex_lock (&devLock);
-    // TODO make sure this is correct place 
-    /* we update the counter after message was processed */
-    CURRENT_ALL_MESG_SIZE -=  bytes_read;
-
-    /* unlock the queue after the update */
-    mutex_unlock (&devLock);
-
 	/* we free the message because it is no longer needed */
 	kfree(msg_head);
 
 	printk(KERN_ALERT "current all msg size: %d\n", CURRENT_ALL_MESG_SIZE);
-
-	/* wake up writer queue because message was retrieved
-	   so there may be more space for writing messages */
-	wake_up_interruptible(&wait_write_queue);
 
 	/* Most read functions return the number of bytes put into the buffer */
 	return bytes_read;
@@ -333,7 +323,7 @@ device_write(struct file *filp, const char *buffer, size_t length, loff_t * off)
 	/* we add the message to the queue, 
 	   if the enqueueing failed, it means there was not enough
 	   memory left, so we abort, and return an error */
-	if(enqueue(&message_queue, msg_head) < 0) {
+	if(enqueue(&message_queue, msg_head, bytes_written) < 0) {
 
 		/* unlock the queue after finishing the enqueueing */
 		mutex_unlock (&devLock);

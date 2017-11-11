@@ -10,12 +10,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="647b91ae-b246-499f-acba-19f85e3f3473" name="Default" comment="">
-      <change type="DELETED" beforePath="$PROJECT_DIR$/main" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/main.c" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/charDeviceDriver.c" afterPath="$PROJECT_DIR$/charDeviceDriver.c" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/charDeviceDriverBlocking.c" afterPath="$PROJECT_DIR$/charDeviceDriverBlocking.c" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test.sh" afterPath="$PROJECT_DIR$/test.sh" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/newtest.sh" afterPath="$PROJECT_DIR$/newtest.sh" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -27,11 +24,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="charDeviceDriver.c" pinned="false" current-in-tab="false">
+      <file leaf-file-name="charDeviceDriver.c" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/charDeviceDriver.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="533">
-              <caret line="213" column="0" lean-forward="false" selection-start-line="213" selection-start-column="0" selection-end-line="213" selection-end-column="0" />
+            <state relative-caret-position="288">
+              <caret line="19" column="3" lean-forward="true" selection-start-line="19" selection-start-column="3" selection-end-line="19" selection-end-column="3" />
               <folding />
             </state>
           </provider>
@@ -47,11 +44,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="charDeviceDriverBlocking.c" pinned="false" current-in-tab="true">
+      <file leaf-file-name="charDeviceDriverBlocking.c" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/charDeviceDriverBlocking.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="396">
-              <caret line="253" column="44" lean-forward="false" selection-start-line="253" selection-start-column="44" selection-end-line="253" selection-end-column="44" />
+            <state relative-caret-position="267">
+              <caret line="44" column="0" lean-forward="true" selection-start-line="44" selection-start-column="0" selection-end-line="44" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -70,7 +67,7 @@
       <file leaf-file-name="ioctl.c" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ioctl.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="594">
+            <state relative-caret-position="587">
               <caret line="33" column="0" lean-forward="false" selection-start-line="33" selection-start-column="0" selection-end-line="33" selection-end-column="0" />
               <folding />
             </state>
@@ -102,8 +99,8 @@
   <component name="FindInProjectRecents">
     <findStrings>
       <find>malloc</find>
-      <find>flag</find>
       <find>printk</find>
+      <find>flag</find>
       <find>message</find>
     </findStrings>
   </component>
@@ -119,8 +116,8 @@
         <option value="$PROJECT_DIR$/charDeviceDriver.h" />
         <option value="$PROJECT_DIR$/Makefile" />
         <option value="$PROJECT_DIR$/ioctl.c" />
-        <option value="$PROJECT_DIR$/charDeviceDriver.c" />
         <option value="$PROJECT_DIR$/charDeviceDriverBlocking.c" />
+        <option value="$PROJECT_DIR$/charDeviceDriver.c" />
       </list>
     </option>
   </component>
@@ -192,12 +189,12 @@
       <updated>1510221893013</updated>
       <workItem from="1510221896018" duration="433000" />
       <workItem from="1510232271834" duration="15218000" />
-      <workItem from="1510350706692" duration="4045000" />
+      <workItem from="1510350706692" duration="11806000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="19696000" />
+    <option name="totallyTimeSpent" value="27457000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="851" y="25" width="1030" height="1022" extended-state="0" />
@@ -316,14 +313,6 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/ioctl.h" />
-    <entry file="file://$PROJECT_DIR$/Makefile">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="252">
-          <caret line="14" column="17" lean-forward="false" selection-start-line="14" selection-start-column="17" selection-end-line="14" selection-end-column="17" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/main.c" />
     <entry file="file://$PROJECT_DIR$/queue.h">
       <provider selected="true" editor-type-id="text-editor">
@@ -333,10 +322,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ioctl.c">
+    <entry file="file://$PROJECT_DIR$/Makefile">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="594">
-          <caret line="33" column="0" lean-forward="false" selection-start-line="33" selection-start-column="0" selection-end-line="33" selection-end-column="0" />
+        <state relative-caret-position="252">
+          <caret line="14" column="17" lean-forward="false" selection-start-line="14" selection-start-column="17" selection-end-line="14" selection-end-column="17" />
           <folding />
         </state>
       </provider>
@@ -349,18 +338,26 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/charDeviceDriver.c">
+    <entry file="file://$PROJECT_DIR$/charDeviceDriverBlocking.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="533">
-          <caret line="213" column="0" lean-forward="false" selection-start-line="213" selection-start-column="0" selection-end-line="213" selection-end-column="0" />
+        <state relative-caret-position="267">
+          <caret line="44" column="0" lean-forward="true" selection-start-line="44" selection-start-column="0" selection-end-line="44" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/charDeviceDriverBlocking.c">
+    <entry file="file://$PROJECT_DIR$/ioctl.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="396">
-          <caret line="253" column="44" lean-forward="false" selection-start-line="253" selection-start-column="44" selection-end-line="253" selection-end-column="44" />
+        <state relative-caret-position="587">
+          <caret line="33" column="0" lean-forward="false" selection-start-line="33" selection-start-column="0" selection-end-line="33" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/charDeviceDriver.c">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="288">
+          <caret line="19" column="3" lean-forward="true" selection-start-line="19" selection-start-column="3" selection-end-line="19" selection-end-column="3" />
           <folding />
         </state>
       </provider>
