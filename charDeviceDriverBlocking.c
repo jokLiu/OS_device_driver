@@ -272,7 +272,7 @@ device_write(struct file *filp, const char *buffer, size_t length, loff_t * off)
 	/* if the message to be written is larger than
 	   the maximum message size which is 4KB then return an error 
 	   No need to lock it because MAX_MESSAGE_SIZE is never changed */
-	if(length > MAX_MESSAGE_SIZE) return -EINVAL;
+	if(length >= MAX_MESSAGE_SIZE) return -EINVAL;
 
 	/* wait/block until there is a message in the queue */
 	wait_event_interruptible(wait_write_queue,

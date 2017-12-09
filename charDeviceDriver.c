@@ -6,6 +6,7 @@
 #include <linux/module.h>
 #include <linux/fs.h>
 #include <linux/slab.h>
+#include <linux/proc_fs.h>
 #include <asm/uaccess.h>	/* for put_user */
 #include <charDeviceDriver.h>
 //---
@@ -260,7 +261,7 @@ device_write(struct file *filp, const char *buffer, size_t length, loff_t * off)
 	/* if the message to be written is larger than
 	   the maximum message size which is 4KB then return an error 
 	   No need to lock it because MAX_MESSAGE_SIZE is never changed */
-	if(length > MAX_MESSAGE_SIZE) return -EINVAL;
+	if(length >= MAX_MESSAGE_SIZE) return -EINVAL;
 
 	/* allocate size for the message */
 	message = kmalloc(length, GFP_KERNEL);
